@@ -50,3 +50,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+intmul
+
+Tests
+.vscode/
+*.txt
