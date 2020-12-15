@@ -1,3 +1,13 @@
+/**
+ * @project: Integer Multiplication
+ * @module intmul
+ * @author Johannes Zottele 11911133
+ * @version 1.0
+ * @date 15.12.2020
+ * @section File Overview
+ * intmul is responsible for the procedure of forking and piping between all processes.
+ */
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>

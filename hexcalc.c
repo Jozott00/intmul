@@ -1,3 +1,13 @@
+/**
+ * @project: Integer Multiplication
+ * @module hexcalc
+ * @author Johannes Zottele 11911133
+ * @version 1.0
+ * @date 15.12.2020
+ * @section File Overview
+ * hexcalc is responsible for calculate the result of the combination of each child process.
+ */
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
