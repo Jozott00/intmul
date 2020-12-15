@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 #include <errno.h>
 
 #include "hexcalc.h"
@@ -15,7 +15,13 @@
         exit(EXIT_FAILURE);                                                                              \
     }
 
-char addHexChar(char a, char b, char *overflow)
+/**
+ * @brief Adds a, b, and the overflow of the early addition.
+ * The overlow is stored in the overflow pointer
+ * 
+ * @return The character which represents the result for this digit.
+ */
+static char addHexChar(char a, char b, char *overflow)
 {
     char sa[] = {a, '\0'};
     char sb[] = {b, '\0'};
@@ -36,8 +42,13 @@ char addHexChar(char a, char b, char *overflow)
     return sres[0];
 }
 
-// result stored in a
-void addHexString(char *result, char *b)
+/**
+ * @brief Adds two strings (hex base) bye iterating from back to front
+ * and using the addHexChar() function.
+ * 
+ * The result is stored in the first operand.
+ */
+static void addHexString(char *result, char *b)
 {
     size_t count = strlen(result);
     int diff = count - strlen(b);
@@ -63,7 +74,10 @@ void addHexString(char *result, char *b)
     }
 }
 
-void addZerosToHex(char **a, size_t count)
+/**
+ * @brief adds zeros to the tail of a string. The number is given by the count.
+ */
+static void addZerosToHex(char **a, size_t count)
 {
     size_t len = strlen(*a);
     size_t total = len + count;

@@ -15,12 +15,45 @@
             (void)fprintf(stderr, "[%s:%d] ERROR: " msg " : %s\n", __FILE__, __LINE__, strerror(errno)); \
         else                                                                                             \
             (void)fprintf(stderr, "[%s:%d] ERROR: " msg "\n", __FILE__, __LINE__);                       \
-        exit(EXIT_FAILURE);                                                                              \
+        wait_handler(1);                                                                                 \
     }
 
+/**
+ * @brief File descriptors for the pipe from an child in direction to the parent.
+ */
 int pipeout[4][2];
 
-size_t get_values(char **a, char **b)
+/**
+ * @brief Handles the waiting for all child processes.
+ * 
+ * @details If EXIT_ERR() is called, the wait_handler() will be called with err=1. So after receiving all child processes, this process
+ * exits with EXIT_FAILURE without continueing the program.
+ */
+static void wait_handler(int err)
+{
+    int status,
+        pid, error = err;
+    while ((pid = wait(&status)) != -1)
+    {
+        if (WEXITSTATUS(status) != EXIT_SUCCESS)
+            error = 1;
+    }
+
+    if (error)
+        exit(EXIT_FAILURE);
+
+    if (errno != ECHILD)
+        EXIT_ERR("cannot wait!", 1)
+}
+
+/**
+ * @brief Looks for two string from stdin. 
+ * 
+ * @details Calls EXIT_ERR() if input is not valid. Stores strings in given pointerpointer.
+ * 
+ * @return returns the length of one string.
+ */
+static size_t get_values(char **a, char **b)
 {
     size_t hexlen = 0;
 
@@ -54,7 +87,11 @@ size_t get_values(char **a, char **b)
     return hexlen;
 }
 
-void gen_half_strlines(size_t len, char *A, char **Ah, char **Al)
+/**
+ * @brief Splits given string line into two and stores them in the pointerpointer. Uses malloc so its important to free them.
+ * Each string is ending with '\n'.
+ */
+static void gen_half_strlines(size_t len, char *A, char **Ah, char **Al)
 {
     int lh = len / 2;
     int ll = len - lh;
@@ -70,7 +107,10 @@ void gen_half_strlines(size_t len, char *A, char **Ah, char **Al)
     Al[0][ll + 1] = '\0';
 }
 
-void write_to_pipe(int fd, char *data)
+/**
+ * @brief Writes data to pipe (given through the file descriptor)
+ */
+static void write_to_pipe(int fd, char *data)
 {
     FILE *f = fdopen(fd, "w");
     if (fputs(data, f) == -1)
@@ -79,7 +119,30 @@ void write_to_pipe(int fd, char *data)
     fflush(f);
 }
 
-void fork_and_pipe(int hexlen, char *A, char *B)
+/**
+ * @brief Reads from all outpipe reading ends and stores the result in given result pointer array.
+ */
+static void read_from_pipes(char *results[4])
+{
+
+    for (int i = 0; i < 4; i++)
+    {
+        FILE *out = fdopen(pipeout[i][0], "r");
+        size_t lencap = 0;
+        ssize_t len = 0;
+        if ((len = getline(&results[i], &lencap, out)) == -1)
+            EXIT_ERR("failed to read result", 1)
+
+        results[i][len - 1] = '\0';
+    }
+}
+
+/**
+ * @brief Creates 4 childprocesses with in and out pipe. 
+ * It also redirects the readend of the inpipe to the stdin and the writeend of the outpipe to the stdout.
+ * After forking and piping the parent process writes the data to the child processes.
+ */
+static void fork_and_pipe(int hexlen, char *A, char *B)
 {
     char *Ah;
     char *Al;
@@ -160,20 +223,12 @@ void fork_and_pipe(int hexlen, char *A, char *B)
     free(Bl);
 }
 
-void read_from_pipes(char *results[4])
-{
-
-    for (int i = 0; i < 4; i++)
-    {
-        FILE *out = fdopen(pipeout[i][0], "r");
-        size_t lencap = 0;
-        ssize_t len = 0;
-        if ((len = getline(&results[i], &lencap, out)) == -1)
-            EXIT_ERR("failed to read result", 1)
-
-        results[i][len - 1] = '\0';
-    }
-}
+/**
+ * @brief Reads 2 hex strings from stdin, if the length of them is 1, they are going to be added and printed to stdout as hex string.
+ * Otherwise fork_and_pipe() is called. After all child processes are finished, the process reads from the pipeout (result of the child processes).
+ * Then it calls calcQuadResult() from hexcalc.c, where the caculation for the result is managed.
+ * Last but not least, the result is printed to stdout.
+ */
 int main(void)
 {
     char *A;
@@ -192,6 +247,8 @@ int main(void)
 
     fork_and_pipe(hexlen, A, B);
 
+    wait_handler(0);
+
     char *results[4];
     read_from_pipes(results);
 
@@ -202,16 +259,6 @@ int main(void)
 
     free(results[0]);
 
-    int status,
-        pid;
-    while ((pid = wait(&status)) != -1)
-    {
-        // fprintf(stderr, "Prozess %d exited with status %d\n", pid, status);
-        // fflush(stderr);
-    }
-
-    if (errno != ECHILD)
-        EXIT_ERR("cannot wait!", 1)
-
+    exit(EXIT_SUCCESS);
     return 0;
 }
