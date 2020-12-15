@@ -56,7 +56,8 @@ void addHexString(char *result, char *b)
         if (realloc(result, count + 1) == NULL)
             EXIT_ERR("Could not reallocate memory", 1);
 
-        memcpy(result + 1, result, count);
+        // memcpy(result + 1, result, count);
+        strcpy(result + 1, result);
         result[0] = overflow[0];
         result[count + 1] = '\0';
     }
