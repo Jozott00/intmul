@@ -127,12 +127,7 @@ void fork_and_pipe(int hexlen, char *A, char *B)
             break;
         default:
             close(pipein[i][0]);
-            // close(pipeout[i][1]);
-
-            // if (dup2(pipeout[i][0], STDOUT_FILENO) == -1)
-            //     EXIT_ERR("Could not dub out", 1);
-
-            // close(pipeout[i][0]);
+            close(pipeout[i][1]);
 
             int pfd = pipein[i][1];
 
@@ -186,20 +181,12 @@ int main(void)
 
     size_t hexlen = get_values(&A, &B);
 
-    // srand(time(NULL));
-    // int random = rand() % (13 + 1 - 2) + 2;
-    // fprintf(stdout, "waiting %d seconds\n", random);
-    // fflush(stdout);
-    // sleep(random);
-
     if (hexlen == 1)
     {
         unsigned int a = strtol(A, NULL, 16);
         unsigned int b = strtol(B, NULL, 16);
         fprintf(stdout, "%X\n", (a * b));
-        // fprintf(stderr, "%X\n", (a * b));
         fflush(stdout);
-        // fflush(stderr);
         exit(EXIT_SUCCESS);
     }
 
@@ -212,6 +199,8 @@ int main(void)
 
     fprintf(stdout, "%s\n", results[0]);
     fflush(stdout);
+
+    free(results[0]);
 
     int status,
         pid;
