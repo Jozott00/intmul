@@ -15,4 +15,4 @@ hexcalc.o: hexcalc.c hexcalc.h
 treerep.o: treerep.c treerep.h
 
 clean:
-	rm -rf *.o intmul hexmul
+	rm -rf *.o intmul

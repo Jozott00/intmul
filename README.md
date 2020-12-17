@@ -20,6 +20,8 @@ B3
 7812C53B014D5DF8
 ```
 
+By calling `./intmul -t`, instead of the result, the process tree is printed out.
+
 The program can be teste on [hexcalc.dobodox.com](https://hexcalc.dobodox.com).
 
 
