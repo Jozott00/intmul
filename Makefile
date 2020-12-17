@@ -5,17 +5,14 @@ compile_flags = -std=c99 -pedantic -Wall -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_SCID
 
 all: intmul
 
-hexmul: intmul.o hexcalc.o
-	$(CC) $(compile_flags) -o $@ $^
-
-intmul: intmul.o hexcalc.o
+intmul: intmul.o hexcalc.o treerep.o
 	$(CC) $(compile_flags) -o $@ $^
 
 %.o: %.c
 	$(CC) $(compile_flags) -c -o $@ $<
-
-# intmul.o: intmul.c intmul.h	
+	
 hexcalc.o: hexcalc.c hexcalc.h
+treerep.o: treerep.c treerep.h
 
 clean:
 	rm -rf *.o intmul hexmul

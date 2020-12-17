@@ -18,6 +18,7 @@
 #include <sys/wait.h>
 
 #include "hexcalc.h"
+#include "treerep.h"
 
 #define EXIT_ERR(msg, iserrno)                                                                           \
     {                                                                                                    \
@@ -32,6 +33,8 @@
  * @brief File descriptors for the pipe from an child in direction to the parent.
  */
 int pipeout[4][2];
+
+int treerep;
 
 /**
  * @brief Handles the waiting for all child processes.
@@ -188,13 +191,16 @@ static void fork_and_pipe(int hexlen, char *A, char *B)
             close(pipein[i][1]);
             close(pipeout[i][0]);
 
-            dup2(pipein[i][0], STDIN_FILENO);
-            dup2(pipeout[i][1], STDOUT_FILENO);
+            if (dup2(pipein[i][0], STDIN_FILENO) == -1 || dup2(pipeout[i][1], STDOUT_FILENO) == -1)
+                EXIT_ERR("could not redirect pipe", 1);
 
             close(pipein[i][0]);
             close(pipeout[i][1]);
 
-            execlp("./intmul", "intmul", NULL);
+            if (treerep)
+                execlp("./intmul", "./intmul", "-t", NULL);
+            else
+                execlp("./intmul", "./intmul", NULL);
 
             EXIT_ERR("Could not execute", 1);
             break;
@@ -238,20 +244,38 @@ static void fork_and_pipe(int hexlen, char *A, char *B)
  * Otherwise fork_and_pipe() is called. After all child processes are finished, the process reads from the pipeout (result of the child processes).
  * Then it calls calcQuadResult() from hexcalc.c, where the caculation for the result is managed.
  * Last but not least, the result is printed to stdout.
+ * 
+ * If the flag "-t" is set, an treerepresentation of all child processes is printed instead of the result. It ueses process_to_string() and read_and_print() from treerep.c 
  */
-int main(void)
+int main(int argc, char *argv[])
 {
+    treerep = 0;
+    if (argc > 1 && strcmp(argv[1], "-t") == 0)
+        treerep = 1;
+
     char *A;
     char *B;
 
     size_t hexlen = get_values(&A, &B);
 
+    A[hexlen] = '\0';
+    B[hexlen] = '\0';
+
+    char *pname;
+    if (treerep)
+        process_to_string(&pname, A, B);
+
     if (hexlen == 1)
     {
-        unsigned int a = strtol(A, NULL, 16);
-        unsigned int b = strtol(B, NULL, 16);
-        fprintf(stdout, "%X\n", (a * b));
-        fflush(stdout);
+        if (treerep)
+            fprintf(stdout, "%s\n", pname);
+        else
+        {
+            unsigned int a = strtol(A, NULL, 16);
+            unsigned int b = strtol(B, NULL, 16);
+            fprintf(stdout, "%X\n", (a * b));
+            fflush(stdout);
+        }
         exit(EXIT_SUCCESS);
     }
 
@@ -259,15 +283,20 @@ int main(void)
 
     wait_handler(0);
 
-    char *results[4];
-    read_from_pipes(results);
+    if (treerep)
+        read_and_print(pipeout, pname);
+    else
+    {
+        char *results[4];
+        read_from_pipes(results);
 
-    calcQuadResult(results, results[1], results[2], results[3], hexlen);
+        calcQuadResult(results, results[1], results[2], results[3], hexlen);
 
-    fprintf(stdout, "%s\n", results[0]);
-    fflush(stdout);
+        fprintf(stdout, "%s\n", results[0]);
+        fflush(stdout);
 
-    free(results[0]);
+        free(results[0]);
+    }
 
     exit(EXIT_SUCCESS);
     return 0;
